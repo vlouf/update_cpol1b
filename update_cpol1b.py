@@ -1,3 +1,11 @@
+"""
+CPOL Level 1b update products.
+
+@title: update_cpol1b
+@author: Valentin Louf <valentin.louf@monash.edu>
+@copyright: Valentin Louf (2017-)
+@institution: Bureau of Meteorology and Monash University
+"""
 import os
 import glob
 import copy
