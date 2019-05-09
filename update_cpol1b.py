@@ -32,8 +32,8 @@ def get_metadata():
     maxlat = '-10.941'
     minlat = '-13.552'
     origin_altitude = '50'
-    origin_latitude = '-12.249'
-    origin_longitude = '131.044'
+    origin_latitude = '-12.2488'
+    origin_longitude = '131.0444'
 
     metadata = dict()
     metadata['Conventions'] = "CF/Radial instrument_parameters"
@@ -72,7 +72,14 @@ def get_metadata():
 
 
 def update_data(infile):
-# ftwo = "/g/data2/rr5/CPOL_radar/CPOL_level_1b/PPI/2017/20170304/cfrad.20170304_000006.000_to_20170304_000826.000_CPOL_PPI_level1b.nc"
+    """
+    Processing to update the old CPOL level 1b data.
+
+    Parameter:
+    ==========
+    input_file: str
+        Path to input radar file.
+    """
     radar = pyart.io.read(infile)
 
     radar_start_date = netCDF4.num2date(radar.time['data'][0], radar.time['units'])
@@ -105,25 +112,31 @@ def update_data(infile):
     radar.metadata = get_metadata()
     radar.radar_calibration = None
 
+    # Drop Obsolete keys
     keys_drop = ['temperature',
         'specific_attenuation_reflectivity',
         'specific_attenuation_differential_reflectivity',
-        'velocity_texture',
-        'differential_reflectivity',
-        'differential_phase',
-        'signal_to_noise_ratio',]
+        'velocity_texture',]
 
     klist = list(radar.fields.keys())
     for key in klist:
         if key in keys_drop:
             radar.fields.pop(key)
 
+    # Rename the reflectivity
+    try:
+        radar.add_field('corrected_reflectivity', radar.fields.pop('reflectivity'))
+    except Exception:
+        pass
+
+    # Rename the 2 Velocity fields
     try:
         radar.fields['velocity'] = radar.fields.pop('raw_velocity')
         radar.add_field('corrected_velocity', radar.fields.pop('region_dealias_velocity'))
     except Exception:
         pass
 
+    # Make sure echo class is an integer array and fix its fillvalue.
     try:
         radar.fields['radar_echo_classification']['data'] = radar.fields['radar_echo_classification']['data'].astype(np.int32)
         np.ma.set_fill_value(radar.fields['radar_echo_classification']['data'], -9999)
@@ -145,17 +158,20 @@ def update_data(infile):
     klist_pr = [('D0', 2, np.NaN),
                 ('velocity', 2, np.NaN),
                 ('total_power', 2, np.NaN),
-                ('reflectivity', 2, np.NaN),
+                ('corrected_reflectivity', 2, np.NaN),
                 ('cross_correlation_ratio', 4, np.NaN),
                 ('corrected_differential_reflectivity', 4, np.NaN),
                 ('corrected_differential_phase', 4, np.NaN),
                 ('corrected_specific_differential_phase', 4, np.NaN),
+                ('differential_reflectivity', 4, np.NaN),
+                ('differential_phase', 4, np.NaN),
                 ('spectrum_width', 4, np.NaN),
+                ('signal_to_noise_ratio', 2, np.NaN),
                 ('corrected_velocity', 2, np.NaN)]
 
     for key, least_digit, fvalue in klist_pr:
         if key not in klist:
-            continue        
+            continue
         try:
             np.ma.set_fill_value(radar.fields[key]['data'], fvalue)
             radar.fields[key]['data'] = radar.fields[key]['data'].astype(np.float32)
@@ -165,8 +181,8 @@ def update_data(infile):
             traceback.print_exc()
             continue
 
+    # Remove wrongfull attributes.
     bad_attr = ['grid_mapping', 'coordinates']
-
     for k in radar.fields.keys():
         for badk in bad_attr:
             try:
@@ -175,6 +191,27 @@ def update_data(infile):
                 pass
 
     pyart.io.write_cfradial(outfilename, radar)
+    return None
+
+
+def process_one_file(input_file):
+    """
+    Update the data for one file only.
+
+    Parameter:
+    ==========
+    input_file: str
+        Path to input radar file.
+    """
+    if not os.path.isfile(input_file):
+        print(f"The input you've given is not a file {input_file}. Doing nothing.")
+        return None
+
+    print(f"This will process only one file: {input_file}.")
+    print(f"The ouput directory will be: {OUTPATH}.")
+    update_data(input_file)
+    print("Processing done.")
+
     return None
 
 
@@ -201,18 +238,15 @@ def main():
                 except ProcessExpired as error:
                     print("%s. Exit code: %d" % (error, error.exitcode))
                 except Exception as error:
-                    print("function raised %s" % error)                    
+                    print("function raised %s" % error)
 
     return None
 
 
 if __name__ == "__main__":
-
-    OUTPATH = "/g/data/hj10/cpol_level_1b/v2018/ppi"
     INPATH = "/g/data2/rr5/CPOL_radar/CPOL_level_1b/PPI/"
 
     parser_description = "Update and re-encode previous version of 1b CPOL product."
-
     parser = argparse.ArgumentParser(description=parser_description)
     parser.add_argument('-y',
         '--year',
@@ -220,8 +254,24 @@ if __name__ == "__main__":
         default=2017,
         type=int,
         help='Year to process.')
+    parser.add_argument('-f',
+        '--file',
+        dest='file',
+        type=str,
+        help='Input file.')
+    parser.add_argument('-o',
+        '--output',
+        dest='output',
+        default="/g/data/hj10/cpol_level_1b/v2018/ppi",
+        type=str,
+        help='Output directory')
 
     args = parser.parse_args()
     YEAR = args.year
-    main()
+    OUTPATH = args.output
+    INFILE = args.file
+    if INFILE is None:
+        main()
+    else:
+        process_one_file(INFILE)
 
