@@ -261,12 +261,12 @@ if __name__ == "__main__":
         dest='year',
         default=2017,
         type=int,
-        help='Year to process.')
+        help='Year to process. Uses multiprocessing to do so. Superseeded by the --file argument.')
     parser.add_argument('-f',
         '--file',
         dest='file',
         type=str,
-        help='Input file.')
+        help='Input file. This option superseeds the --year argument.')
     parser.add_argument('-o',
         '--output',
         dest='output',
