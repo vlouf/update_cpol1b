@@ -134,6 +134,8 @@ def update_data(infile):
     # Rename the reflectivity
     try:
         radar.add_field('corrected_reflectivity', radar.fields.pop('reflectivity'))
+        np.ma.set_fill_value(radar.fields['corrected_reflectivity']['data'], np.NaN)
+        radar.fields['corrected_reflectivity']['data'] = np.ma.masked_invalid(radar.fields['corrected_reflectivity']['data'])
     except Exception:
         pass
 
@@ -190,7 +192,7 @@ def update_data(infile):
             continue
 
     # Remove wrongfull attributes.
-    bad_attr = ['grid_mapping', 'coordinates']
+    bad_attr = ['grid_mapping', 'coordinates', 'sampling_ratio']
     for k in radar.fields.keys():
         for badk in bad_attr:
             try:
