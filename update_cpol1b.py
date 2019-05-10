@@ -282,8 +282,11 @@ if __name__ == "__main__":
     YEAR = args.year
     OUTPATH = args.output
     INFILE = args.file
-    if INFILE is None:
-        main()
-    else:
-        process_one_file(INFILE)
 
+    with warnings.catch_warnings():
+        # Turn off warnings.
+        warnings.simplefilter("ignore")
+        if INFILE is None:
+            main()
+        else:
+            process_one_file(INFILE)
