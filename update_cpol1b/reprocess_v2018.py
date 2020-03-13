@@ -7,14 +7,10 @@ import zipfile
 import argparse
 import datetime
 
-import tqdm
-import netCDF4
-import pandas as pd
-import xarray as xr
-
 import dask
 import dask.bag as db
-from dask.diagnostics import ProgressBar
+import pandas as pd
+import xarray as xr
 
 
 def good_keys():
@@ -139,6 +135,17 @@ def mkdir(path):
     return None
 
 
+def remove(flist):
+    for f in flist:
+        if f is None:
+            continue
+        try:
+            os.remove(f)
+        except FileNotFoundError:
+            pass
+    return None
+
+
 def extract_zip(inzip, path):
     dates = os.path.basename(inzip).replace('.zip', '')
     with zipfile.ZipFile(inzip) as zid:
@@ -180,20 +187,12 @@ def update_dataset(radar_file, path):
     return radar_file
 
 
-def remove(flist):
-    for f in flist:
-        if f is None:
-            continue
-        try:
-            os.remove(f)
-        except FileNotFoundError:
-            pass
-    return None
-
-
 def main():
     zipdir = '/scratch/kl02/vhl548'
     ziplist = sorted(glob.glob(f'/g/data/hj10/admin/cpol_level_1b/v2018/ppi/{YEAR}/*.zip'))
+    if len(ziplist) == 0:
+        print('No file found.')
+        return None
 
     for zfile in ziplist:
         dates, namelist = extract_zip(zfile, zipdir)
@@ -210,11 +209,11 @@ if __name__ == "__main__":
     parser_description = "Update and re-encode previous version of 1b CPOL product."
     parser = argparse.ArgumentParser(description=parser_description)
     parser.add_argument('-y',
-        '--year',
-        dest='year',
-        default=1999,
-        type=int,
-        help='Year to process. Uses multiprocessing to do so. Superseeded by the --file argument.')
+                        '--year',
+                        dest='year',
+                        type=int,
+                        help='Year to process.',
+                        required=True)
 
     args = parser.parse_args()
     YEAR = args.year
