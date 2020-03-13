@@ -136,7 +136,7 @@ def update_data(infile):
         radar.add_field('corrected_reflectivity', radar.fields.pop('reflectivity'))
         radar.fields['corrected_reflectivity']['data'] = radar.fields['corrected_reflectivity']['data'].filled(np.NaN)
         radar.fields['corrected_reflectivity']['data'] = np.ma.masked_invalid(radar.fields['corrected_reflectivity']['data'])
-        np.ma.set_fill_value(radar.fields['corrected_reflectivity']['data'], np.NaN)        
+        np.ma.set_fill_value(radar.fields['corrected_reflectivity']['data'], np.NaN)
     except Exception:
         traceback.print_exc()
         pass
