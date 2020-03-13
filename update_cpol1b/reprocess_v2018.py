@@ -1,5 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
+"""
+Script for reprocessing old CPOL data. It insures compatibility with the CF and
+ACDD conventions for the metadata and it removes temporary and obsolete
+variables.
+
+@title: reprocess_v2018
+@author: Valentin Louf <valentin.louf@monash.edu>
+@institutions: Monash University and the Australian Bureau of Meteorology
+@creation: 13/03/2020
+"""
 import os
 import glob
 import uuid
@@ -14,6 +24,9 @@ import xarray as xr
 
 
 def good_keys():
+    '''
+    List of keys to keep in the final dataset.
+    '''
     keep_keys = ['time',
                  'range',
                  'azimuth',
@@ -57,6 +70,21 @@ def good_keys():
 
 
 def get_metadata(radar_start_date, radar_end_date):
+    '''
+    Generates metadata compatible with CF and ACDD conventions.
+
+    Parameters:
+    ===========
+    radar_start_date: Timestamp
+        Data file start date.
+    radar_end_date: Timestamp
+        Data file end date.
+
+    Returns:
+    ========
+    metadata: dict
+        Metadata attributes dictionnary.
+    '''
     maxlon = 132.385
     minlon = 129.703
     maxlat = -10.941
@@ -127,6 +155,14 @@ def get_metadata(radar_start_date, radar_end_date):
 
 
 def mkdir(path):
+    '''
+    Create a directory.
+
+    Parameters:
+    ===========
+    path: str
+        Path to directory
+    '''
     try:
         os.mkdir(path)
     except FileExistsError:
@@ -136,6 +172,14 @@ def mkdir(path):
 
 
 def remove(flist):
+    '''
+    Remove files.
+
+    Parameters:
+    ===========
+    flist: list
+        List of files to remove
+    '''
     for f in flist:
         if f is None:
             continue
@@ -147,6 +191,23 @@ def remove(flist):
 
 
 def extract_zip(inzip, path):
+    '''
+    Extract all members from the archive.
+
+    Parameters:
+    ===========
+    inzip: str
+        Zip file to extract
+    path: str
+        Path specifies a directory to extract to.
+
+    Returns:
+    ========
+    dates: str
+        Date string for the zipfile
+    namelist: list
+        List of file names in the archive.
+    '''
     dates = os.path.basename(inzip).replace('.zip', '')
     with zipfile.ZipFile(inzip) as zid:
         zid.extractall(path=path)
@@ -155,6 +216,22 @@ def extract_zip(inzip, path):
 
 
 def update_dataset(radar_file, path):
+    """
+    Processing to update the old CPOL level 1b data.
+
+    Parameter:
+    ==========
+    radar_file: str
+        Path to input radar file.
+    path: str
+        Path specifies a directory to write the output file to.
+
+    Return:
+    =======
+    radar_file: str
+        Return None if processing failed, otherwise it returns the path to
+        input radar file, so that you can delete the input latter.
+    """
     dset = xr.open_dataset(radar_file)
     radar_start_date = dset.time[0].values
     radar_end_date = dset.time[-1].values
@@ -188,6 +265,12 @@ def update_dataset(radar_file, path):
 
 
 def main():
+    '''
+    1/ List all zip files for a given year,
+    2/ Extract one zip file (each representing one day) at a time,
+    3/ Processing (updating) and removing obsolete keys,
+    4/ Removing extracted files.
+    '''
     zipdir = '/scratch/kl02/vhl548'
     ziplist = sorted(glob.glob(f'/g/data/hj10/admin/cpol_level_1b/v2018/ppi/{YEAR}/*.zip'))
     if len(ziplist) == 0:
@@ -206,7 +289,7 @@ def main():
 
 
 if __name__ == "__main__":
-    parser_description = "Update and re-encode previous version of 1b CPOL product."
+    parser_description = "Update and re-encode version v2018 of 1b CPOL product."
     parser = argparse.ArgumentParser(description=parser_description)
     parser.add_argument('-y',
                         '--year',
