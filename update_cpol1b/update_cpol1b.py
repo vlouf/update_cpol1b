@@ -16,7 +16,7 @@ import warnings
 import traceback
 
 import pyart
-import netCDF4
+import cftime
 import numpy as np
 import xarray as xr
 
@@ -96,7 +96,11 @@ def update_data(infile):
     """
     radar = pyart.io.read(infile)
 
-    radar_start_date = netCDF4.num2date(radar.time["data"][0], radar.time["units"])
+    radar_start_date = cftime.num2date(radar.time['data'][0],
+                                       radar.time['units'],
+                                       only_use_cftime_datetimes=False,
+                                       only_use_python_datetimes=True)
+
     daystr = radar_start_date.strftime("%Y%m%d")
     filename = "twp10cpolppi.b1.{}00.nc".format(
         radar_start_date.strftime("%Y%m%d.%H%M")
