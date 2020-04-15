@@ -133,7 +133,7 @@ def get_metadata(radar_start_date, radar_end_date):
         "instrument_name": "CPOL",
         "instrument_type": "radar",
         "keywords": "radar, tropics, Doppler, dual-polarization",
-        "licence": "Freely Distributed",
+        "license": "CC BY-NC-SA 4.0",
         "naming_authority": "au.org.nci",
         "origin_altitude": origin_altitude,
         "origin_latitude": origin_latitude,
