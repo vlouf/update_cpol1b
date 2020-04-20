@@ -96,10 +96,7 @@ def update_data(infile):
     """
     radar = pyart.io.read(infile)
 
-    radar_start_date = cftime.num2date(radar.time['data'][0],
-                                       radar.time['units'],
-                                       only_use_cftime_datetimes=False,
-                                       only_use_python_datetimes=True)
+    radar_start_date = cftime.num2pydate(radar.time["data"][0], radar.time["units"])
 
     daystr = radar_start_date.strftime("%Y%m%d")
     filename = "twp10cpolppi.b1.{}00.nc".format(
